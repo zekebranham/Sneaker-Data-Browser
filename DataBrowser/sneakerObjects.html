@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sneakers Top 20</title>
+    <link rel="stylesheet" href="./styles/sneakerObjectsCSS.css">
+    
+
+</head>
+<body>
+<h1>Top Sneakers</h1>
+<div id="customModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">×</span>
+        <h2 id="modalTitle">Title</h2>
+        <p id="modalMessage">This is a custom message.</p>
+        <button onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<div id="sneakerList"></div>
+
+<div id="buttonContainer1" class="button-box1">
+    <button onclick="previousSneaker()" id="previousButton">Previous</button>
+    <button onclick="nextSneaker()" id="nextButton">Next</button>
+    
+    <button onclick="firstSneaker()" id="firstButton">First</button>
+    
+    
+    <button onclick="lastSneaker()" id="lastButton">Last</button>
+    <button onclick="showEditForm()" id="editButton" style="display: block">Edit Sneaker</button>
+    <div id="editSection">
+        <form id="editForm" style="display: none;" onsubmit="handleEdit(event)">
+            <input type="text" id="editMake" name="make" placeholder="Make" required>
+            <input type="text" id="editModel" name="model" placeholder="Model" required>
+            <input type="text" id="editColorway" name="colorway" placeholder="Colorway" required>
+            <input type="number" id="editPrice" name="price" placeholder="Price" step="0.01" required>
+            <select id="editNewRelease" name="newRelease">
+                <option value="true">New Release</option>
+                <option value="false">Classic</option>
+            </select>
+            <button type="submit" style="margin-top: 10px; margin-bottom: 10px;">Save Changes</button>
+        </form>
+        <button onclick="hideCurrentForm()" id="editHide" style="display: none;">Hide</button>
+    </div>
+    
+</div>
+
+<div id="buttonContainer2" class="button-box2">
+    
+    <button onclick="showDeleteForm()" id="deleteButton" style="display: block">Delete Sneaker</button>
+    <div id="deleteSection">
+        <form id="deleteForm" style="display: none;" action="./php/delete.php" method="POST">
+            <input type="text" name="model" placeholder="Model" required>
+            <input type="text" name="colorway" placeholder="Colorway" required>
+            <button type="submit" style="margin-top: 10px; margin-bottom: 10px;">Delete Sneaker</button>
+        </form>
+        <button onclick="hideCurrentForm()" id="deleteHide" style="display: none;">Hide</button>
+    </div>
+
+    <button onclick="showInsertForm()" id="insertButton" style="display: block">Insert Sneaker</button>
+    <div id="insertSection">
+        <form id="insertForm" style="display: none;" action="./php/insert.php" method="POST">
+            <input type="text" name="make" placeholder="Make" required>
+            <input type="text" name="model" placeholder="Model" required>
+            <input type="text" name="colorway" placeholder="Colorway" required>
+            <input type="number" name="price" placeholder="Price" step="0.01" required>
+            <select name="newRelease">
+                <option value="true">New Release</option>
+                <option value="false">Classic</option>
+            </select>
+            <input type="text" name="picture" placeholder="Image URL" required>
+            <button type="submit" style="margin-top: 10px; margin-bottom: 10px;">Insert New Sneaker</button>
+        </form>
+        <button onclick="hideCurrentForm()" id="insertHide" style="display: none;">Hide</button>
+    </div>
+    
+    <form action="./php/sort_sneakers.php" method="GET">
+        <label for="sort_by">Sort Sneakers By:</label>
+        <select name="sort_by" id="sort_by" required>
+            <option value="price">Price (Low to High)</option>
+            <option value="model">Model</option>
+            <option value="new_release">New Release</option>
+        </select>
+        <button type="submit" style="margin-top: 10px; margin-bottom: 10px;">Sort</button>
+    </form>
+</div>
+
+<script>
+    // Define the SneakersTop25 class with a picture attribute
+    class SneakersTop20 {
+        constructor(id, make, model, colorway, price, newRelease, picture) {
+            this.id = id; // Add the ID
+            this.make = make;
+            this.model = model;
+            this.colorway = colorway;
+            this.price = price;
+            this.newRelease = newRelease;
+            this.picture = picture;
+        }
+
+        // Method to display the sneaker details with an image
+        getDetailsHTML() {
+            return `
+                <div class="sneaker-card">
+                    <img src="${this.picture}" alt="${this.make} ${this.model}" class="sneaker-image">
+                    <div class="sneaker-details">Make: <strong>${this.make}</strong></div>
+                    <div class="sneaker-details">Model: <strong>${this.model}</strong></div>
+                    <div class="sneaker-details">Colorway: <strong>${this.colorway}</strong></div>
+                    <div class="sneaker-details sneaker-price">Price: $${this.price}</div>
+                    <div class="sneaker-details">Release Status: <strong>${this.newRelease ? "New Release" : "Classic"}</strong></div>
+                </div>
+            `;
+        }
+    }
+    // // Step 2: Create instances of the class with picture URLs
+    // const top20Sneakers = [
+    //     new SneakersTop20("Nike", "Air Jordan 4 Retro", "Fear", 240, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/105/217/381/original/1373134_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Wmns Air Jordan 11 Retro", "Bred Velvet", 246, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/105/392/726/original/1395042_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Dunk High Retro Premium", "Wu-Tan", 197, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/105/391/533/original/1445010_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 9 Retro", "Olive", 210, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/104/860/451/original/1373118_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Dunk Low", "Berlin", 130, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/102/266/252/original/FZ3053_001.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 4 Retro", "White Thunder", 251, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/102/744/314/original/1333222_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 1 Retro High OG", "Midnight Navy", 180, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/102/499/092/original/1334510_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Travis Scott x Air Jordan 1 Retro Low OG SP", "Reverse Olive", 418, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/104/376/353/original/1382370_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 14 Retro", "Black Toe", 252, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/105/192/560/original/1394965_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Wmns Air Jordan 4 Retro", "Orchid", 259, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/104/352/216/original/1394973_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 3 Retro", "Cement Grey", 200, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/217/212/original/1335391_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 1 Retro Low OG", "Mocha", 140, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/845/118/original/1308778_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 11 Retro Low", "Diffused Blue", 138, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/218/480/original/1260930_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "A Ma Maniere x Wmns Air Jordan 4 Retro", "While You Were Sleeping", 205, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/104/352/182/original/1382366_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 12 Retro", "Barons", 193, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/846/310/original/1335394_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Dunk Low", "Grey Fog", 83, false, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/102/529/153/original/815560_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("New Balance", "9060", "Fuchsia Pink", 162, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/411/697/original/1454774_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Air Jordan 4 Retro", "Oxidized Green", 138, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/101/079/912/original/1308085_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Nike", "Zoom Kobe 5 Protro", "X-Ray", 172, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/104/567/705/original/1381863_00.png.png?action=crop&width=300"),
+    //     new SneakersTop20("Rick Owens", "Wmns Lunar Mega Tractor Boot", "Pearl", 4080, true, "https://image.goat.com/transform/v1/attachments/product_template_pictures/images/103/810/890/original/RP02D3862_LGF_89.png.png?action=crop&width=300")
+    // ];
+
+    // Step 3: Display each sneaker with an image
+
+    let top20Sneakers = [];
+    let currentIndex = 0;
+    let currentVisibleForm = null; // Tracks the currently visible form
+
+    // Attach handlers to forms
+    document.querySelector("form[action='./php/insert.php']").addEventListener("submit", handleInsert);
+    document.querySelector("form[action='./php/delete.php']").addEventListener("submit", handleDelete);
+
+    // Function to load JSON data using XMLHttpRequest
+    //OLD NOT NEEDED ANYMORE. Reads from the JSON file directly
+    function loadSneakers(currentIndex) {
+        const xhr = new XMLHttpRequest();
+        //Old, fetches directly from JSON
+        //xhr.open("GET", "mycollection.json", true);
+
+        //New, fetches from MySQL DB rather than JSON
+        xhr.open("GET", "./php/fetch_data.php", true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                top20Sneakers = data.map(sneakerData => new SneakersTop20(
+                    sneakerData.id, // Include ID
+                    sneakerData.make,
+                    sneakerData.model,
+                    sneakerData.colorway,
+                    sneakerData.price,
+                    sneakerData.newRelease,
+                    sneakerData.picture
+                ));
+                // Display the first sneaker, or the last sneaker if showLast is true
+                displaySneaker(currentIndex); // Display the first sneaker once data is loaded
+            }
+        };
+        xhr.send();
+    }
+
+    // Function to display a single sneaker based on the index
+    function displaySneaker(index) {
+        const sneakerList = document.getElementById("sneakerList");
+        if (!sneakerList) {
+            console.error("Sneaker list container not found.");
+            return;
+        }
+
+        if (index >= 0 && index < top20Sneakers.length) {
+            const sneaker = top20Sneakers[index];
+            sneakerList.innerHTML = sneaker.getDetailsHTML();
+        } else {
+            sneakerList.innerHTML = "<p>No sneakers available.</p>";
+        }
+
+    }
+
+
+    // Functions for navigation buttons
+    function nextSneaker() {
+        currentIndex = (currentIndex + 1) % top20Sneakers.length;
+        displaySneaker(currentIndex);
+    }
+    function currentSneaker(index){
+        displaySneaker(index);
+    }
+
+    function previousSneaker() {
+        currentIndex = (currentIndex - 1 + top20Sneakers.length) % top20Sneakers.length;
+        displaySneaker(currentIndex);
+    }
+
+    function firstSneaker() {
+        currentIndex = 0;
+        displaySneaker(currentIndex);
+    }
+    
+    function lastSneaker() {
+        currentIndex = top20Sneakers.length-1;
+        displaySneaker(currentIndex);
+    }
+
+    function hideCurrentForm() {
+        if (currentVisibleForm) {
+            const form = document.getElementById(currentVisibleForm);
+            const hideButton = document.getElementById(currentVisibleForm.replace("Form", "Hide"));
+            const originalButton = document.getElementById(currentVisibleForm.replace("Form", "Button"));
+
+            if (form) {
+                form.style.display = "none";
+            }
+            if (hideButton) {
+                hideButton.style.display = "none";
+            }
+            if (originalButton) {
+                originalButton.style.display = "block"; // Show the original button
+            }
+            currentVisibleForm = null; // Reset the visible form
+        }
+    }
+
+//Showing forms section
+    function showEditForm() {
+        
+        // Populate the edit form with the current sneaker's data
+        const sneaker = top20Sneakers[currentIndex];
+        document.getElementById("editMake").value = sneaker.make;
+        document.getElementById("editModel").value = sneaker.model;
+        document.getElementById("editColorway").value = sneaker.colorway;
+        document.getElementById("editPrice").value = sneaker.price;
+        document.getElementById("editNewRelease").value = sneaker.newRelease ? "true" : "false";
+
+        // Show the edit form
+        hideCurrentForm(); // Hide any currently visible form
+
+        const editButton = document.getElementById("editButton")
+        const editForm = document.getElementById("editForm");
+        const hideButton = document.getElementById("editHide");
+
+        if (editForm && hideButton) {
+            editForm.style.display = "block";
+            hideButton.style.display = "block";
+            editButton.style.display = "none"; // Hide the edit button
+        }
+        
+        currentVisibleForm = "editForm";
+    }
+
+    function showInsertForm() {
+        hideCurrentForm(); // Hide any currently visible form
+
+        const insertForm = document.getElementById("insertForm");
+        const hideButton = document.getElementById("insertHide");
+
+        if (insertForm && hideButton) {
+            insertForm.style.display = "block";
+            hideButton.style.display = "block";
+            insertButton.style.display = "none"; // Hide the insert button
+        }
+        currentVisibleForm = "insertForm";
+    }
+
+    function showDeleteForm(){
+        hideCurrentForm(); // Hide any currently visible form
+
+        const deleteForm = document.getElementById("deleteForm");
+        const hideButton = document.getElementById("deleteHide");
+
+        if (deleteForm && hideButton) {
+            deleteForm.style.display = "block";
+            hideButton.style.display = "block";
+            deleteButton.style.display = "none"; // Hide the delete button
+        }
+        currentVisibleForm = "deleteForm";
+    }
+    
+//Handling form data section
+    function handleEdit(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const hideButton = document.getElementById("editHide"); // Get the hide button
+        // Collect updated data from the form
+        const sneaker = top20Sneakers[currentIndex];
+        const formData = new FormData();
+        formData.append("id", sneaker.id); // Pass the unique ID of the current sneaker
+        formData.append("make", document.getElementById("editMake").value);
+        formData.append("model", document.getElementById("editModel").value);
+        formData.append("colorway", document.getElementById("editColorway").value);
+        formData.append("price", document.getElementById("editPrice").value);
+        formData.append("newRelease", document.getElementById("editNewRelease").value);
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "./php/edit.php", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.status === "success") {
+                    showModal('Success!', response.message);
+
+                    loadSneakers(currentIndex); // Reload sneakers to show updated data
+
+                    hideCurrentForm(); // Hide the form and reset the UI
+                    if (hideButton) hideButton.style.display = "none"; // Hide the hide button
+                } else {
+                    showModal('Error:', response.message);
+                }
+            }
+        };        
+        xhr.send(formData);
+        console.log("Edited Sneaker Sucessfully!");
+    }
+    
+    function handleInsert(event) {
+        event.preventDefault(); // Prevent default form submission
+        const formData = new FormData(event.target);
+        const hideButton = document.getElementById("insertHide"); // Get the hide button
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "./php/insert.php", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.status === "success") {
+                    showModal('Success!', response.message);
+                    loadSneakers(top20Sneakers.length); // Reload the sneakers from the database and displays the last sneaker (inserted sneaker)
+                    hideCurrentForm(); // Hide the form and reset the UI();
+                    if (hideButton) hideButton.style.display = "none"; // Hide the hide button
+                } else {
+                    showModal('Error:', response.message);
+                }
+            }
+        };
+        xhr.send(formData);
+        console.log("Inserted New Sneaker Sucessfully!");
+        lastSneaker();
+    }
+        
+    function handleDelete(event) {
+        event.preventDefault(); // Prevent default form submission
+        const formData = new FormData(event.target);
+        const hideButton = document.getElementById("deleteHide"); // Get the hide button
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "./php/delete.php", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.status === "success") {
+                            showModal('Success!', response.message);
+                            top20Sneakers.splice(currentIndex, 1); // Remove sneaker from array
+
+                            // Adjust index and update UI
+                            if (currentIndex >= top20Sneakers.length) {
+                                currentIndex = top20Sneakers.length - 1;
+                            }
+                            if (top20Sneakers.length > 0) {
+                                displaySneaker(currentIndex);
+                            } else {
+                                document.getElementById("sneakerList").innerHTML = "<p>No sneakers available.</p>";
+                            }
+                            loadSneakers(0);
+                            hideCurrentForm(); // Hide the form and reset the UI                            
+                            if (hideButton) hideButton.style.display = "none"; // Hide the hide button
+                        } else {
+                            showModal('Error: ', response.message);
+                        }
+                    } catch (e) {
+                        console.error("Error parsing JSON response:", e);
+                        console.error("Raw response:", xhr.responseText);
+                    }
+                } else {
+                    alert("Error: Failed to connect to delete.php.");
+                }
+            }
+        };
+        xhr.send(formData);
+        console.log("Deleted Sneaker Sucessfully!");
+    }
+
+    //tool if needed
+    function reloadPage(){
+        window.location.reload();
+    }
+
+    // Load sneakers on page load
+    loadSneakers(0);
+
+    function showModal(title, message) {
+        document.getElementById("modalTitle").textContent = title;
+        document.getElementById("modalMessage").textContent = message;
+        document.getElementById("customModal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("customModal").style.display = "none";
+    }
+
+</script>
+</body>
+</html>
